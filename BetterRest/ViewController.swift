@@ -68,6 +68,7 @@ class ViewController: UIViewController {
         // Instantiate stepper for sleepTime
         // TODO: please change the steppers to a function later
         sleepAmountTime = UIStepper()
+        sleepAmountTime.addTarget(self, action: #selector(sleepAmountChanged), for: .valueChanged) // call sleep amount changed function and update tha stepper value
         sleepAmountTime.stepValue = 0.25
         sleepAmountTime.value = 8
         sleepAmountTime.minimumValue = 4
@@ -91,6 +92,7 @@ class ViewController: UIViewController {
         mainStackView.addArrangedSubview(coffeeTitle)
         
         coffeeAmountStepper = UIStepper()
+        coffeeAmountStepper.addTarget(self, action: #selector(coffeeAmontChanged), for: .valueChanged) // TODO: change to a function, used more than once
         coffeeAmountStepper.minimumValue = 1
         coffeeAmountStepper.maximumValue = 20
         
@@ -109,14 +111,77 @@ class ViewController: UIViewController {
         mainStackView.setCustomSpacing(20, after: sleepStackView)
         mainStackView.setCustomSpacing(10, after: coffeeTitle)
         
+        
+        //Call the helper fuctions
+        sleepAmountChanged()
+        coffeeAmontChanged()
+        
     }
     
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+       
+        title = "Better Rest"
+        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Calculate", style: .plain, target: self, action: #selector(calculateBedTime))
     }
-
+    
+    
+    // update sleepTime change label
+    @objc func sleepAmountChanged(){
+        
+        sleepAmounLabel.text = String(format: "%g hour", sleepAmountTime.value)
+        
+    }
+    
+    // update coffee amount changed label
+    @objc func coffeeAmontChanged() {
+        if coffeeAmountStepper.value == 1 {
+            coffeeAmountLabel.text = "1 cup"
+        }else {
+            
+            coffeeAmountLabel.text = "\(Int(coffeeAmountStepper.value)) cups"
+        }
+    }
+    
+    @objc func calculateBedTime(){
+        let model = SleepCalculator()
+        
+        let title: String
+        let message: String
+        
+        do {
+            
+            let components = Calendar.current.dateComponents([.hour, .minute], from: wakeUpTime.date) // get the date components from our component
+            
+            let hour = (components.hour ?? 0) * 60 * 60 // wakeUp hour in seconds
+            let minute = (components.minute ?? 0) * 60
+            
+            let predication = try model.prediction(coffee: coffeeAmountStepper.value, estimatedSleep: sleepAmountTime.value, wake: Double(hour + minute))
+            
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            
+            let wakeDate = wakeUpTime.date - predication.actualSleep
+            message = formatter.string(from: wakeDate)
+            
+            title = "Your ideal bedtime is..."
+            
+        
+            
+        } catch  {
+            
+            title = "Error"
+            message = "Sorry there was a proble calculating your bedTime."
+        }
+        
+        let ac = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "Ok", style: .default))
+        present(ac, animated: true)
+        
+        
+    }
 
 }
 
